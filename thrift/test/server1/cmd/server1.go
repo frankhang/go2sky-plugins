@@ -65,7 +65,7 @@ func main() {
 	}
 
 	//transportFactory := thrift.NewTTransportFactory()
-	transportFactory := thrift_plugin.NewTTransportFactoryWrapper(thrift.NewTTransportFactory())
+	transportFactory := thrift_plugin.NewTTransportFactoryWrapper(thrift.NewTTransportFactory()) //将thrift创建的TransportFactory传入本plugin对应的Wrapper
 	transport, _ := transportFactory.GetTransport(tSocket)
 	//protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
 	protocolFactory := thrift_plugin.NewTProtocolFactoryWrapper(thrift.NewTBinaryProtocolFactoryDefault(), transportFactory, tracer) //将原来的ProtocolFactory传入thrift plugin的Wrapper

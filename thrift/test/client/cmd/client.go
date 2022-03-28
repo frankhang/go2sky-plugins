@@ -45,7 +45,7 @@ func main() {
 		log.Fatalln("tSocket error:", err)
 	}
 	//transportFactory := thrift.NewTTransportFactory()
-	transportFactory := thrift_plugin.NewTTransportFactoryWrapper(thrift.NewTTransportFactory())
+	transportFactory := thrift_plugin.NewTTransportFactoryWrapper(thrift.NewTTransportFactory()) //将thrift创建的TransportFactory传入本plugin对应的Wrapper
 
 	transport, _ := transportFactory.GetTransport(tSocket)
 
