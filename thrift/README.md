@@ -1,5 +1,3 @@
-
-
 #Golang thrift plugin for skywalking 使用指南
 
 * 依赖
@@ -11,6 +9,14 @@ impport (
 	thrift_plugin "github.com/frankhang/go2sky-plugins/thrift"
 )
 ```
+
+thrift_plugin 下来后，修改其中的go.mod文件，将
+```
+replace github.com/apache/thrift/lib/go/thrift =>
+```
+
+指向自己提前装好的thrift0.13.0库的位置。
+
 
 * 程序初始化的时候调用以下代码（仅调用一次,包括thrift客户方和服务方程序）
 
