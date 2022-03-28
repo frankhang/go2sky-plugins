@@ -7,7 +7,7 @@ import (
 	"github.com/SkyAPM/go2sky/reporter"
 	"github.com/apache/thrift/lib/go/thrift"
 	thrift_plugin "github.com/frankhang/go2sky-plugins/thrift"
-	"github.com/frankhang/go2sky-plugins/thrift/test/ThriftDemo/gen-go/example"
+	"github.com/frankhang/go2sky-plugins/thrift/test/pkg/gen-go/example"
 	"log"
 	"net"
 )
@@ -84,11 +84,10 @@ func main() {
 }
 func (fdi *FormatDataImpl) DoTransfer(ctx context.Context, data *example.Data) (r *example.Data, err error) {
 
-	r, err = callDoformat(data, client)
-	if err == nil && r.Text != "error" {
-		r, err = callDobracket(r, client)
+	if r, err = callDoformat(data, client); err != nil {
+		fmt.Printf("callDoformat error: %s", err.Error())
 	} else {
-		fmt.Printf("----------%s - %+v\n", err.Error(), r)
+		r, err = callDobracket(r, client)
 	}
 
 	return

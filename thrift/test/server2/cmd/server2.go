@@ -8,7 +8,7 @@ import (
 	"github.com/SkyAPM/go2sky/reporter"
 	"github.com/apache/thrift/lib/go/thrift"
 	thrift_plugin "github.com/frankhang/go2sky-plugins/thrift"
-	"github.com/frankhang/go2sky-plugins/thrift/test/ThriftDemo/gen-go/example"
+	"github.com/frankhang/go2sky-plugins/thrift/test/pkg/gen-go/example"
 	"log"
 	"math/rand"
 	"strings"
@@ -74,8 +74,7 @@ func (fdi *FormatDataImpl) DoFormat(ctx context.Context, data *example.Data) (r 
 
 	var rData string
 	if delay > 700 { //设定30%的失败率，用于测试失败的情形
-		rData = "error" //返回error表示失败
-		err = errors.New("err")
+		err = errors.New("DoFormat doing err.")
 	} else {
 		rData = strings.ToUpper(data.Text)
 	}

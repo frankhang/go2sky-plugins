@@ -1,8 +1,7 @@
 namespace go example
 
 struct Data {
-    1: string text,
-
+    1: string text
 }
 
 service format_data {

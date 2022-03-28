@@ -7,7 +7,7 @@ import (
 	"github.com/SkyAPM/go2sky/reporter"
 	"github.com/apache/thrift/lib/go/thrift"
 	thrift_plugin "github.com/frankhang/go2sky-plugins/thrift"
-	"github.com/frankhang/go2sky-plugins/thrift/test/ThriftDemo/gen-go/example"
+	"github.com/frankhang/go2sky-plugins/thrift/test/pkg/gen-go/example"
 	"log"
 	"net"
 	"time"

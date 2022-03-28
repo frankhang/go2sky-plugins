@@ -8,7 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/frankhang/go2sky-plugins/thrift/test/ThriftDemo/gen-go/example"
+	"github.com/frankhang/go2sky-plugins/thrift/test/pkg/gen-go/example"
 	"math"
 	"net"
 	"net/url"

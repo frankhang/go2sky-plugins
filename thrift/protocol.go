@@ -27,6 +27,7 @@ type TProtocolWrapper struct {
 	reqAddr                      string
 	isClient, isServer           bool
 	headerReaded, headerInjected bool
+	ignoreField                  bool
 }
 
 type TProtocolFactoryWrapper struct {
@@ -69,15 +70,15 @@ func (pw *TProtocolWrapper) ReadMessageBegin() (name string, typeId thrift.TMess
 		pw.isServer = true
 		pw.header = make(map[string]string)
 		pw.headerReaded = false
-		fmt.Printf("[%s] ReadMessageBegin: %v, %d, %p-%d\n", pw.operationName, routine.Goid(), seqid, pw, len(pw.header))
+		//fmt.Printf("[%s] ReadMessageBegin: %v, %d, %p-%d\n", pw.operationName, routine.Goid(), seqid, pw, len(pw.header))
 
 	} else { //client side echo
-		fmt.Printf("[%s] ReadMessageBegin2: %v, %d, %p-%d\n", pw.operationName, routine.Goid(), seqid, pw, len(pw.header))
+		//fmt.Printf("[%s] ReadMessageBegin2: %v, %d, %p-%d\n", pw.operationName, routine.Goid(), seqid, pw, len(pw.header))
 		_, pw.span, _ = recoverFromContext()
-		fmt.Printf("ReadMessageBegin2 span [%s] : %p， %d\n", pw.operationName, pw.span, typeId)
+		//fmt.Printf("ReadMessageBegin2 span [%s] : %p， %d\n", pw.operationName, pw.span, typeId)
 		if pw.span != nil {
 			if err != nil || typeId == thrift.EXCEPTION || typeId == thrift.INVALID_TMESSAGE_TYPE {
-				fmt.Printf("AAAAAAAA\n")
+				//fmt.Printf("AAAAAAAA\n")
 				pw.span.Error(time.Now(), fmt.Sprintf("%s error %d %s", name, typeId, err)) //错误上报，第二个参数开始（可选）表示错误日志。
 				pw.span.Tag(go2sky.TagStatusCode, "1")                                      //错误代码上报，可选。
 			} else {
@@ -106,7 +107,7 @@ func (pw *TProtocolWrapper) ReadMessageEnd() (err error) {
 			fmt.Println("CreateEntrySpan error: ", e2)
 			return
 		}
-		fmt.Printf("[%s] ReadMessageEnd: %v, %p, %p-%d\n", pw.operationName, routine.Goid(), entryCtx, pw, len(pw.header))
+		//fmt.Printf("[%s] ReadMessageEnd: %v, %p, %p-%d\n", pw.operationName, routine.Goid(), entryCtx, pw, len(pw.header))
 
 		//defer entrySpan.End()
 		pw.entrySpan = entrySpan
@@ -119,7 +120,7 @@ func (pw *TProtocolWrapper) ReadMessageEnd() (err error) {
 			entrySpan.SetOperationName(pw.operationName)
 		}
 	} else {
-		fmt.Printf("[%s] ReadMessageEnd2: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
+		//fmt.Printf("[%s] ReadMessageEnd2: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
 
 	}
 	return
@@ -132,12 +133,12 @@ func (pw *TProtocolWrapper) ReadFieldBegin() (name string, typeId thrift.TType, 
 	if pw.isServer { //server side
 
 		if id != SW_MAGIC_FIELD_ID || typeId != thrift.MAP {
-			fmt.Printf("[%s] ReadFieldBegin: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
+			//fmt.Printf("[%s] ReadFieldBegin: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
 			return
 		}
 		_, _, size, ee := p.ReadMapBegin()
 		if ee != nil || size == 0 {
-			fmt.Printf("[%s] begin: %v never \n", pw.operationName, routine.Goid())
+			//fmt.Printf("[%s] begin: %v zzzzzzzzzzzzzzzzzzzzzzz %+v\n", pw.operationName, routine.Goid(), err)
 			err = ee
 			p.ReadMapEnd()
 			p.ReadFieldEnd()
@@ -145,7 +146,7 @@ func (pw *TProtocolWrapper) ReadFieldBegin() (name string, typeId thrift.TType, 
 			return
 		}
 
-		fmt.Printf("[%s] readHeader begin: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
+		//fmt.Printf("[%s] readHeader begin: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
 
 		for i := 0; i < size; i++ {
 			var key, value string
@@ -172,6 +173,8 @@ func (pw *TProtocolWrapper) WriteMessageBegin(name string, typeId thrift.TMessag
 	if typeId == thrift.CALL { //client side.
 		pw.isClient = true
 		pw.headerInjected = false
+		pw.header = nil
+		//pw.createExitSpan()
 
 		//entryCtx, span, entrySpan := recoverFromContext()
 		//if entryCtx == nil {
@@ -183,7 +186,7 @@ func (pw *TProtocolWrapper) WriteMessageBegin(name string, typeId thrift.TMessag
 		_, _, pw.entrySpan = recoverFromContext()
 		if pw.entrySpan != nil {
 			if typeId == thrift.EXCEPTION || typeId == thrift.INVALID_TMESSAGE_TYPE { //本地发生的错误
-				fmt.Printf("BBBBBBBB\n")
+				//fmt.Printf("BBBBBBBB\n")
 				pw.entrySpan.Error(time.Now(), fmt.Sprintf("%s error %d", name, typeId)) //错误上报，第二个参数开始（可选）表示错误日志。
 				pw.entrySpan.Tag(go2sky.TagStatusCode, "1")                              //错误代码上报，可选。
 			} else {
@@ -201,59 +204,70 @@ func (pw *TProtocolWrapper) WriteMessageBegin(name string, typeId thrift.TMessag
 func (pw *TProtocolWrapper) WriteMessageEnd() error {
 	if pw.isClient {
 		//fmt.Printf("WriteMessageEnd [%s] : %v, %p, %p-%d\n", pw.operationName, routine.Goid(), entryCtx, pw, len(pw.header))
-		fmt.Printf("WriteMessageEnd [%s] : %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
+		//fmt.Printf("WriteMessageEnd [%s] : %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
 
 	}
 	return pw.TProtocol.WriteMessageEnd()
 
 }
 
+func (pw *TProtocolWrapper) WriteFieldBegin(name string, typeId thrift.TType, id int16) error {
+	if pw.isClient { //client side.
+		if id == SW_MAGIC_FIELD_ID || typeId == thrift.MAP {
+			fmt.Printf("[%s] WriteFieldBegin ignore: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
+			pw.ignoreField = true
+			return nil
+		}
+	}
+	return pw.TProtocol.WriteFieldBegin(name, typeId, id)
+}
+
+func (pw *TProtocolWrapper) WriteFieldEnd() error {
+	if pw.isClient { //client side.
+		if pw.ignoreField {
+			pw.ignoreField = false
+			return nil
+		}
+	}
+	return pw.TProtocol.WriteFieldEnd()
+}
+
+func (pw *TProtocolWrapper) WriteMapBegin(keyType thrift.TType, valueType thrift.TType, size int) error {
+	if pw.isClient { //client side.
+		if pw.ignoreField {
+			return nil
+		}
+	}
+	return pw.TProtocol.WriteMapBegin(keyType, valueType, size)
+}
+
+func (pw *TProtocolWrapper) WriteMapEnd() error {
+	if pw.isClient { //client side.
+		if pw.ignoreField {
+			return nil
+		}
+	}
+	return pw.TProtocol.WriteMapEnd()
+}
+
+func (pw *TProtocolWrapper) WriteString(value string) error {
+	if pw.isClient { //client side.
+		if pw.ignoreField {
+			return nil
+		}
+	}
+	return pw.TProtocol.WriteString(value)
+}
+
 func (pw *TProtocolWrapper) WriteFieldStop() (err error) {
 	if pw.isClient && !pw.headerInjected { //client side.
+		pw.createExitSpan()
+		//fmt.Printf("[%s] WriteFieldStop inject: %v, %p-%d\n", pw.operationName, routine.Goid(), pw, len(pw.header))
 
 		pw.headerInjected = true
-
-		var span, entrySpan go2sky.Span
-		var entryCtx context.Context
-
-		entryCtx, _, entrySpan = recoverFromContext()
-		fmt.Printf("WriteFieldStop invoke [%s] : %v, %p, %p-%d\n", pw.operationName, routine.Goid(), entryCtx, pw, len(pw.header))
-
-		var parentCtx context.Context
-		if entryCtx == nil {
-			//fmt.Println("entryCtx should not be nil")
-			//entrySpan, entryCtx, err = pw.tracer.CreateLocalSpan(context.Background())
-			parentCtx = context.Background()
-		} else {
-			parentCtx = entryCtx
-		}
-
-		header := make(map[string]string)
-
-		span, err = pw.tracer.CreateExitSpan(parentCtx, pw.operationName, pw.reqAddr, func(key, value string) error {
-			header[key] = value
-
-			return nil
-		})
-		if err != nil {
-			fmt.Println("CreateExitSpan error:", err)
-			return
-		}
-		//defer span.End()
-		pw.span = span
-		storeToContext(entryCtx, span, entrySpan)
-		fmt.Printf("WriteFieldStop span [%s] : %p\n", pw.operationName, span)
-
-		if span != nil {
-			span.SetComponent(componentIDGOThriftClient)
-			span.SetSpanLayer(v3.SpanLayer_RPCFramework)
-			span.SetOperationName(pw.operationName)
-
-		}
-
 		pw.TProtocol.WriteFieldBegin(SW_MAGIC_FIELD, thrift.MAP, SW_MAGIC_FIELD_ID)
-		pw.TProtocol.WriteMapBegin(thrift.STRING, thrift.STRING, len(header))
-		for key, value := range header {
+		pw.TProtocol.WriteMapBegin(thrift.STRING, thrift.STRING, len(pw.header))
+		for key, value := range pw.header {
 			pw.TProtocol.WriteString(key)
 			pw.TProtocol.WriteString(value)
 		}
@@ -265,3 +279,52 @@ func (pw *TProtocolWrapper) WriteFieldStop() (err error) {
 	}
 	return pw.TProtocol.WriteFieldStop()
 }
+
+func (pw *TProtocolWrapper) createExitSpan() {
+
+	//pw.spanCreated = true
+	pw.header = make(map[string]string)
+
+	var span, entrySpan go2sky.Span
+	var entryCtx context.Context
+
+	entryCtx, _, entrySpan = recoverFromContext()
+	//fmt.Printf("WriteFieldStop createExitSpan [%s] : %v, %p, %p-%d\n", pw.operationName, routine.Goid(), entryCtx, pw, len(pw.header))
+
+	var parentCtx context.Context
+	if entryCtx == nil {
+		//fmt.Println("entryCtx should not be nil")
+		//entrySpan, entryCtx, err = pw.tracer.CreateLocalSpan(context.Background())
+		parentCtx = context.Background()
+	} else {
+		parentCtx = entryCtx
+	}
+
+	var err error
+	span, err = pw.tracer.CreateExitSpan(parentCtx, pw.operationName, pw.reqAddr, func(key, value string) error {
+		pw.header[key] = value
+
+		return nil
+	})
+	if err != nil {
+		fmt.Println("CreateExitSpan error:", err)
+		return
+	}
+	//defer span.End()
+	pw.span = span
+	storeToContext(entryCtx, span, entrySpan)
+	//fmt.Printf("WriteFieldStop span [%s] : %p\n", pw.operationName, span)
+
+	if span != nil {
+		span.SetComponent(componentIDGOThriftClient)
+		span.SetSpanLayer(v3.SpanLayer_RPCFramework)
+		span.SetOperationName(pw.operationName)
+	}
+	return
+
+}
+
+//func (pw *TProtocolWrapper) Skip(fieldType thrift.TType) (err error) {
+//	err = pw.TProtocol.Skip(fieldType)
+//	return
+//}
